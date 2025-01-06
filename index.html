@@ -51,12 +51,17 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 36px;
+      font-size: 40px;
       background-color: #fff;
       border: 2px solid #ccc;
       cursor: pointer;
       border-radius: 8px;
       transition: background-color 0.2s;
+      text-shadow: 
+        0 0 5px #ffffff,     
+        0 0 10px #ff69b4,    
+        0 0 20px #ff69b4, 
+        0 0 40px #ff69b4;
     }
 
     .game-board div:hover {
@@ -102,7 +107,6 @@
     </div>
     <button id="reset-button">Restart Game</button>
   </div>
-d
   <script>
     const PLAYER_X = 'X';
     const PLAYER_O = 'O';
