@@ -18,6 +18,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      flex-direction: column;
     }
 
     .game-container {
@@ -26,13 +27,33 @@
       border-radius: 12px;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
       padding: 20px;
-      width: 400px;
+      width: 100%;
+      max-width: 400px;
     }
 
     h1 {
       font-size: 36px;
       margin-bottom: 20px;
       color: #333;
+    }
+
+    .game-mode {
+      margin-bottom: 20px;
+    }
+
+    .game-mode button {
+      padding: 10px 20px;
+      margin: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .game-mode button:hover {
+      background-color: #2980b9;
     }
 
     .game-board {
@@ -55,7 +76,7 @@
       border: 2px solid #ccc;
       cursor: pointer;
       border-radius: 8px;
-      transition: background-color 0.2s;
+      transition: background-color 0.3s ease-in-out;
       text-shadow: 
         0 0 5px #ffffff,     
         0 0 10px #ff69b4,    
@@ -94,6 +115,42 @@
       background-color: #2ecc71;
       color: white;
       font-weight: bold;
+      animation: highlight 1s ease-out;
+    }
+
+    @keyframes highlight {
+      0% { background-color: #2ecc71; }
+      100% { background-color: #e74c3c; }
+    }
+
+    .game-result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #333;
+      font-weight: bold;
+    }
+
+    .game-result.win {
+      color: green;
+    }
+
+    .game-result.draw {
+      color: orange;
+    }
+
+    @media (max-width: 600px) {
+      .game-board {
+        grid-template-columns: repeat(3, 80px);
+        grid-template-rows: repeat(3, 80px);
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      #reset-button {
+        font-size: 14px;
+      }
     }
 
   </style>
@@ -101,11 +158,21 @@
 <body>
   <div class="game-container">
     <h1>Tic Tac Toe</h1>
-    <div id="game-board" class="game-board">
-     
+    
+    <!-- Game Mode Selection -->
+    <div class="game-mode">
+      <button id="user-vs-user">User vs User</button>
+      <button id="system-vs-user">System vs User</button>
     </div>
+
+    <div id="game-board" class="game-board"></div>
+
+    <!-- Result Display Area -->
+    <div id="game-result" class="game-result"></div>
+
     <button id="reset-button">Restart Game</button>
   </div>
+
   <script>
     const PLAYER_X = 'X';
     const PLAYER_O = 'O';
@@ -113,11 +180,14 @@
     let currentPlayer = PLAYER_X;
     let board = ['', '', '', '', '', '', '', '', ''];
     let gameActive = true;
+    let gameMode = 'user-vs-user';  // Default mode is User vs User
 
     const gameBoard = document.getElementById('game-board');
     const resetButton = document.getElementById('reset-button');
+    const userVsUserButton = document.getElementById('user-vs-user');
+    const systemVsUserButton = document.getElementById('system-vs-user');
+    const gameResult = document.getElementById('game-result');
 
-   
     function initGameBoard() {
       gameBoard.innerHTML = '';
       for (let i = 0; i < 9; i++) {
@@ -126,43 +196,39 @@
         cell.addEventListener('click', handleCellClick);
         gameBoard.appendChild(cell);
       }
+      gameResult.textContent = ''; // Clear the result message when restarting the game
+      gameResult.classList.remove('win', 'draw');  // Reset result styles
     }
 
-  
     function handleCellClick(event) {
       const index = event.target.getAttribute('data-index');
       if (board[index] !== '' || !gameActive) return;
 
-     
       board[index] = currentPlayer;
       event.target.textContent = currentPlayer;
       event.target.classList.add(currentPlayer);
 
-     
       if (checkWinner(currentPlayer)) {
         gameActive = false;
         highlightWinningCells(currentPlayer);
-        alert(`${currentPlayer} wins!`);
+        showGameResult(`${currentPlayer} wins!`, 'win');
         return;
       }
 
-      
       if (!board.includes('')) {
         gameActive = false;
-        alert("It's a draw!");
+        showGameResult("It's a draw!", 'draw');
         return;
       }
 
- 
-      if (currentPlayer === PLAYER_X) {
+      if (gameMode === 'system-vs-user' && currentPlayer === PLAYER_X) {
         currentPlayer = PLAYER_O;
-        setTimeout(systemMove, 500); 
+        setTimeout(systemMove, 500);  // Wait for 500ms to simulate a delay
       } else {
-        currentPlayer = PLAYER_X;
+        currentPlayer = currentPlayer === PLAYER_X ? PLAYER_O : PLAYER_X;
       }
     }
 
- 
     function systemMove() {
       let bestMove = minimax(board, PLAYER_O);
       const cell = gameBoard.children[bestMove.index];
@@ -170,15 +236,13 @@
       cell.textContent = PLAYER_O;
       cell.classList.add('O');
 
-      
       if (checkWinner(PLAYER_O)) {
         gameActive = false;
         highlightWinningCells(PLAYER_O);
-        alert(`${PLAYER_O} wins!`);
+        showGameResult(`${PLAYER_O} wins!`, 'win');
         return;
       }
 
-      
       currentPlayer = PLAYER_X;
     }
 
@@ -207,7 +271,6 @@
         moves.push(move);
       });
 
-      
       if (player === PLAYER_O) {
         return moves.reduce((bestMove, move) => move.score > bestMove.score ? move : bestMove);
       } else {
@@ -217,14 +280,14 @@
 
     function checkWinner(player) {
       const winningCombinations = [
-        [0, 1, 2], 
-        [3, 4, 5], 
-        [6, 7, 8], 
-        [0, 3, 6], 
-        [1, 4, 7], 
-        [2, 5, 8], 
-        [0, 4, 8], 
-        [2, 4, 6]  
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
       ];
 
       return winningCombinations.some(combination => {
@@ -253,6 +316,11 @@
       }
     }
 
+    function showGameResult(message, resultClass) {
+      gameResult.textContent = message;
+      gameResult.classList.add(resultClass);
+    }
+
     function resetGame() {
       board = ['', '', '', '', '', '', '', '', ''];
       currentPlayer = PLAYER_X;
@@ -260,8 +328,19 @@
       initGameBoard();
     }
 
+    userVsUserButton.addEventListener('click', () => {
+      gameMode = 'user-vs-user';
+      resetGame();
+    });
+
+    systemVsUserButton.addEventListener('click', () => {
+      gameMode = 'system-vs-user';
+      resetGame();
+    });
+
     resetButton.addEventListener('click', resetGame);
     initGameBoard();
+
   </script>
 </body>
 </html>
